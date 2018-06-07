@@ -392,7 +392,13 @@ var bm25fIMS = function () {
                 return true;
               };
     // Tokenized `text`. Use search specific weights.
-    var tkns = prepareInput( text, 'search' )
+    var prepared = prepareInput( text, 'search' );
+    // keep track of the contributions made by each token
+    var tokens = [];
+    prepared.forEach(function (token) {
+      tokens[token2Index[token]] = { token, score: 0 };
+    });
+    var tkns = prepared
                 // Filter out tokens that do not exists in the vocabulary.
                 .filter( function ( t ) {
                    return ( token2Index[ t ] !== undefined );
@@ -418,7 +424,9 @@ var bm25fIMS = function () {
       for ( i = 0, imax = ids.length; i < imax; i += 1 ) {
         id = ids[ i ];
         if ( f( documents[ id ].fieldValues, params ) ) {
-          results[ id ] = documents[ id ].freq[ t ] + ( results[ id ] || 0 );
+          var score = documents[ id ].freq[ t ];
+          tokens[t].score += score;
+          results[ id ] = score + ( results[ id ] || 0 );
         }
         // To be uncommented to probe values!
         /* console.log( '%s, %d, %d, %d', t, documents[ id ].freq[ t ], idf[ t ], results[ id ] ); */
@@ -426,10 +434,12 @@ var bm25fIMS = function () {
     }
     // Convert to a table in `[ id, score ]` format; sort and slice required number
     // of resultant documents.
-    return ( ( helpers.object.table( results ) )
+    results = ( ( helpers.object.table( results ) )
                 .sort( helpers.array.descendingOnValue )
                 .slice( 0, Math.max( ( limit || 10 ), 1 ) )
            );
+    results.tokens = tokens.filter((tk) => tk);
+    return results;
   }; // search()
 
   // #### Reset

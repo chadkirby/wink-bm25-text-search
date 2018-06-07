@@ -132,6 +132,13 @@ describe( 'complete clean workflow test', function () {
   it( 'search should return \n\t' + docs[ 1 ].body, function () {
     expect( docs[ bts.search( 'whoes husband is barack' )[ 0 ][ 0 ] ].body ).to.equal( text );
   } );
+  it( 'search should return tokens', function () {
+    expect( bts.search( 'whose husband is barack' ).tokens ).to.deep.equal( [
+      { score: 5.4579, token: 'barack' },
+      { score: 4.7991, token: 'husband' },
+      { score: 1.8492, token: 'whose' }
+    ] );
+  } );
 
   var json;
   it( 'exportJSON should return valid json', function () {
