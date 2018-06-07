@@ -1,5 +1,5 @@
 {
-  "name": "wink-bm25-text-search",
+  "name": "@ckirby/wink-bm25-text-search",
   "version": "2.0.4",
   "description": "Configurable BM25 Text Search Engine with simple semantic search support",
   "keywords": [
@@ -25,14 +25,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/winkjs/wink-bm25-text-search.git"
+    "url": "git+https://github.com/chadkirby/wink-bm25-text-search.git"
   },
   "author": "Sanjaya Kumar Saxena",
   "license": "AGPL-3.0",
   "bugs": {
-    "url": "https://github.com/winkjs/wink-bm25-text-search/issues"
+    "url": "https://github.com/chadkirby/wink-bm25-text-search/issues"
   },
-  "homepage": "https://github.com/winkjs/wink-bm25-text-search#readme",
+  "homepage": "https://github.com/chadkirby/wink-bm25-text-search#readme",
   "devDependencies": {
     "chai": "^4.1.2",
     "coveralls": "^3.0.1",
