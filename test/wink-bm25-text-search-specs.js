@@ -118,8 +118,8 @@ describe( 'complete clean workflow test', function () {
   } );
 
   docs.forEach( function ( doc, i ) {
-    it( 'addDoc should return ' + ( i + 1 ) + ' doc count', function () {
-      expect( bts.addDoc( doc, i ) ).to.equal( i + 1 );
+    it( 'addDoc should return ' + ( i + 1 ) + ' doc count', async function () {
+      expect( await bts.addDoc( doc, i ) ).to.equal( i + 1 );
     } );
   } );
 
@@ -129,11 +129,11 @@ describe( 'complete clean workflow test', function () {
 
   var text = 'Michelle LaVaughn Robinson Obama (born January 17, 1964) is an American lawyer and writer who was First Lady of the United States from 2009 to 2017. She is married to the 44th President of the United States, Barack Obama, and was the first African-American First Lady. Raised on the South Side of Chicago, Illinois, Obama is a graduate of Princeton University and Harvard Law School, and spent her early legal career working at the law firm Sidley Austin, where she met her husband. She subsequently worked as the Associate Dean of Student Services at the University of Chicago and the Vice President for Community and External Affairs of the University of Chicago Medical Center. Barack and Michelle married in 1992 and have two daughters.';
 
-  it( 'search should return \n\t' + docs[ 1 ].body, function () {
-    expect( docs[ bts.search( 'whoes husband is barack' )[ 0 ][ 0 ] ].body ).to.equal( text );
+  it( 'search should return \n\t' + docs[ 1 ].body, async function () {
+    expect( docs[ (await bts.search( 'whoes husband is barack' ))[ 0 ][ 0 ] ].body ).to.equal( text );
   } );
-  it( 'search should return tokens', function () {
-    expect( bts.search( 'whose husband is barack' ).tokens ).to.deep.equal( [
+  it( 'search should return tokens', async function () {
+    expect( (await bts.search( 'whose husband is barack' )).tokens ).to.deep.equal( [
       { score: 5.4579, token: 'barack' },
       { score: 4.7991, token: 'husband' },
       { score: 1.8492, token: 'whose' }
@@ -154,24 +154,28 @@ describe( 'complete clean workflow test', function () {
     expect( bts.consolidate.bind( null) ).to.throw( 'winkBM25S: document collection is too small for consolidation; add more docs!' );
   } );
 
-  it( 'post reset, even search should throw error', function () {
-    expect( bts.search.bind( null, 'whoes husband is barack' ) ).to.throw( 'winkBM25S: search is not possible unless learnings are consolidated!' );
+  it( 'post reset, even search should throw error', async function () {
+    try {
+      await bts.search( 'whoes husband is barack' );
+    } catch (err) {
+      expect(err).to.be.an.instanceof(Error, 'winkBM25S: search is not possible unless learnings are consolidated!' );
+    }
   } );
 
   it( 'importJSON should return true', function () {
     expect( bts.importJSON( json ) ).to.equal( true );
   } );
 
-  it( 'post consolidated import, search should return results', function () {
-    expect( docs[ bts.search( 'who is married to barack' )[ 0 ][ 0 ] ].body ).to.equal( text );
+  it( 'post consolidated import, search should return results', async function () {
+    expect( docs[ (await bts.search( 'who is married to barack' ))[ 0 ][ 0 ] ].body ).to.equal( text );
   } );
 
   it( 'now consolidate should therefore throw error', function () {
     expect( bts.consolidate.bind( null) ).to.throw( 'winkBM25S: consolidation can be carried out only once!' );
   } );
 
-  it( 'search should once again return \n\t' + docs[ 1 ].body, function () {
-    expect( docs[ bts.search( 'who is married to barack' )[ 0 ][ 0 ] ].body ).to.equal( text );
+  it( 'search should once again return \n\t' + docs[ 1 ].body, async function () {
+    expect( docs[ (await bts.search( 'who is married to barack' ))[ 0 ][ 0 ] ].body ).to.equal( text );
   } );
 } );
 
@@ -224,8 +228,8 @@ describe( 'complete clean workflow test with field value retained', function () 
   } );
 
   docs.forEach( function ( doc, i ) {
-    it( 'addDoc should return ' + ( i + 1 ) + ' doc count', function () {
-      expect( bts.addDoc( doc, i ) ).to.equal( i + 1 );
+    it( 'addDoc should return ' + ( i + 1 ) + ' doc count', async function () {
+      expect( await bts.addDoc( doc, i ) ).to.equal( i + 1 );
     } );
   } );
 
@@ -233,16 +237,20 @@ describe( 'complete clean workflow test with field value retained', function () 
     expect( bts.consolidate( 2 ) ).to.equal( true );
   } );
 
-  it( 'search should about Ronald Wilson Reagan', function () {
-    expect( docs[ bts.search( 'President of the United States', 10, mobFilter, 'february' )[ 0 ][ 0 ] ].body ).to.equal( text );
+  it( 'search should about Ronald Wilson Reagan', async function () {
+    expect( docs[ (await bts.search( 'President of the United States', 10, mobFilter, 'february' ))[ 0 ][ 0 ] ].body ).to.equal( text );
   } );
 } );
 
 describe( 'defineConfig() Error Cases', function () {
   var bts = bm25();
 
-  it( 'should return true if the input is ', function () {
-    expect( bts.addDoc.bind( null, { fail: 'why fail?' } ) ).to.throw( 'winkBM25S: Config must be defined before adding a document.' );
+  it( 'should return true if the input is ', async function () {
+    try {
+      await bts.addDoc( { fail: 'why fail?' } );
+    } catch (err) {
+      expect(err).to.be.an.instanceof(Error, 'winkBM25S: Config must be defined before adding a document.' );
+    }
   } );
 
   var configs1 = [
@@ -273,28 +281,40 @@ describe( 'defineConfig() Error Cases', function () {
     } );
   } );
 
-  it( 'should return true if the input is { fail: "why fail?", broken: 2 }, 1', function () {
-    expect( bts.addDoc( { fail: 'why fail?', broken: 2 }, 1 ) ).to.equal( 1 );
+  it( 'should return true if the input is { fail: "why fail?", broken: 2 }, 1', async function () {
+    expect( await bts.addDoc( { fail: 'why fail?', broken: 2 }, 1 ) ).to.equal( 1 );
   } );
 
-  it( 'should return true if the input is  { fail: "why fail?", broken: 2 }, 1 (dup)', function () {
-    expect( bts.addDoc.bind( null, { fail: 'why fail?', broken: 2 }, 1 ) ).to.throw( 'winkBM25S: Duplicate document encountered: 1' );
+  it( 'should return true if the input is  { fail: "why fail?", broken: 2 }, 1 (dup)', async function () {
+    try {
+      await bts.addDoc( { fail: 'why fail?', broken: 2 }, 1  );
+    } catch (err) {
+      expect(err).to.be.an.instanceof(Error, 'winkBM25S: Duplicate document encountered: 1' );
+    }
   } );
 
-  it( 'should return true if the input is { fail: "why fail?", broken: 2 }, 2', function () {
-    expect( bts.addDoc( { fail: 'why fail?', broken: 2 }, 2 ) ).to.equal( 2 );
+  it( 'should return true if the input is { fail: "why fail?", broken: 2 }, 2', async function () {
+    expect( await bts.addDoc( { fail: 'why fail?', broken: 2 }, 2 ) ).to.equal( 2 );
   } );
 
-  it( 'should return true if the input is { fail: "why fail?", broken: 2 }, 3', function () {
-    expect( bts.addDoc( { fail: 'why fail?', broken: 2 }, 3 ) ).to.equal( 3 );
+  it( 'should return true if the input is { fail: "why fail?", broken: 2 }, 3', async function () {
+    expect( await bts.addDoc( { fail: 'why fail?', broken: 2 }, 3 ) ).to.equal( 3 );
   } );
 
-  it( 'should return true if the input is { pass: "why not pass?" }, 9', function () {
-    expect( bts.addDoc.bind( null, { pass: 'why not pass?' }, 9 ) ).to.throw( 'winkBM25S: Missing field in the document: "fail"' );
+  it( 'should return true if the input is { pass: "why not pass?" }, 9', async function () {
+    try {
+      await bts.addDoc( { pass: 'why not pass?' }, 9 );
+    } catch (err) {
+      expect(err).to.be.an.instanceof(Error, 'winkBM25S: Missing field in the document: "fail"' );
+    }
   } );
 
-  it( 'should return true if the input is { fail: "why not pass?", mended: 3 }, 10', function () {
-    expect( bts.addDoc.bind( null, { fail: 'why not pass?', mended: 3 }, 10 ) ).to.throw( 'winkBM25S: Missing field in the document: "broken"' );
+  it( 'should return true if the input is { fail: "why not pass?", mended: 3 }, 10', async function () {
+    try {
+      await bts.addDoc( { fail: 'why not pass?', mended: 3 }, 10 );
+    } catch (err) {
+      expect(err).to.be.an.instanceof(Error, 'winkBM25S: Missing field in the document: "broken"' );
+    }
   } );
 
   it( 'should return true if the input is ', function () {
@@ -305,12 +325,20 @@ describe( 'defineConfig() Error Cases', function () {
     expect( bts.consolidate( 6 ) ).to.equal( true );
   } );
 
-  it( 'should throw error if attempt to addDoc is made', function () {
-    expect( bts.addDoc.bind( null, { fail: 3 }, 4 ) ).to.throw( 'winkBM25S: post consolidation adding/learning is not possible!' );
+  it( 'should throw error if attempt to addDoc is made', async function () {
+    try {
+      await bts.addDoc( { fail: 3 }, 4 );
+    } catch (err) {
+      expect(err).to.be.an.instanceof(Error, 'winkBM25S: post consolidation adding/learning is not possible!' );
+    }
   } );
 
-  it( 'should throw error if attempt to search not string is made', function () {
-    expect( bts.search.bind( null, { fail: 3 } ) ).to.throw( 'winkBM25S: search text should be a string, instead found: object' );
+  it( 'should throw error if attempt to search not string is made', async function () {
+    try {
+      await bts.search( { fail: 3 } );
+    } catch (err) {
+      expect(err).to.be.an.instanceof(Error, 'winkBM25S: search text should be a string, instead found: object' );
+    }
   } );
 
   it( 'importJSON should throw error when null is passed', function () {
@@ -377,8 +405,8 @@ describe( 'complete workflow to test consildate edge case', function () {
   } );
 
   docs.forEach( function ( doc, i ) {
-    it( 'addDoc should return ' + ( i + 1 ) + ' doc count', function () {
-      expect( bts.addDoc( doc, i ) ).to.equal( i + 1 );
+    it( 'addDoc should return ' + ( i + 1 ) + ' doc count', async function () {
+      expect( await bts.addDoc( doc, i ) ).to.equal( i + 1 );
     } );
   } );
 
@@ -389,7 +417,7 @@ describe( 'complete workflow to test consildate edge case', function () {
 
   var text = 'Michelle LaVaughn Robinson Obama (born January 17, 1964) is an American lawyer and writer who was First Lady of the United States from 2009 to 2017. She is married to the 44th President of the United States, Barack Obama, and was the first African-American First Lady. Raised on the South Side of Chicago, Illinois, Obama is a graduate of Princeton University and Harvard Law School, and spent her early legal career working at the law firm Sidley Austin, where she met her husband. She subsequently worked as the Associate Dean of Student Services at the University of Chicago and the Vice President for Community and External Affairs of the University of Chicago Medical Center. Barack and Michelle married in 1992 and have two daughters.';
 
-  it( 'search should return \n\t' + docs[ 1 ].body, function () {
-    expect( docs[ bts.search( 'whoes husband is barack' )[ 0 ][ 0 ] ].body ).to.equal( text );
+  it( 'search should return \n\t' + docs[ 1 ].body, async function () {
+    expect( docs[ (await bts.search( 'whoes husband is barack' ))[ 0 ][ 0 ] ].body ).to.equal( text );
   } );
 } );

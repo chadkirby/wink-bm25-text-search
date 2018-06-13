@@ -22,6 +22,7 @@
 
 //
 var helpers = require( 'wink-helpers' );
+var { reduce } = require( 'bluebird' );
 
 /* eslint guard-for-in: 0 */
 /* eslint complexity: [ "error", 25 ] */
@@ -48,8 +49,6 @@ var helpers = require( 'wink-helpers' );
 var bm25fIMS = function () {
   // Preparatory tasks that are executed on the `addDoc` & `search` input.
   var pTasks = [];
-  // And its count.
-  var pTaskCount;
   // Field level prep tasks.
   var flds = Object.create( null );
   // Returned!
@@ -89,22 +88,20 @@ var bm25fIMS = function () {
   // If the `field` specific `pTasks` are not defined then it automatically
   // switches to default `pTasks`.
   var prepareInput = function ( input, field ) {
-    var processedInput = input;
-    var pt = ( flds[ field ] && flds[ field ].pTasks ) || pTasks;
-    var ptc = ( flds[ field ] && flds[ field ].pTaskCount ) || pTaskCount;
-    for ( var i = 0; i < ptc; i += 1 ) {
-      processedInput = pt[ i ]( processedInput );
-    }
-    return ( processedInput );
+    return reduce(
+      ( flds[ field ] && flds[ field ].pTasks ) || pTasks,
+      (processedInput, pTask) => pTask(processedInput),
+      input
+    );
   }; // prepareInput()
 
   // #### Update Freq
 
   // Updates the `freq` of each term in the `text` after pre-processing it via
   // `prepareInput()`; while updating, it takes care of `field's` `weight`.
-  var updateFreq = function ( id, text, weight, freq, field ) {
+  var updateFreq = async function ( id, text, weight, freq, field ) {
     // Tokenized `text`.
-    var tkns = prepareInput( text, field );
+    var tkns = await prepareInput( text, field );
     // Temp token holder.
     var t;
     for ( var i = 0, imax = tkns.length; i < imax; i += 1 ) {
@@ -155,7 +152,6 @@ var bm25fIMS = function () {
     var fldWeights = config.fldWeights;
     if ( field === undefined || field === null ) {
       pTasks = tasks;
-      pTaskCount = tasks.length;
     } else {
       if ( !fldWeights[ field ] || typeof field !== 'string' ) {
         throw Error( 'winkBM25S: Field name is missing or it is not a string: ' + JSON.stringify( field ) + '/' + ( typeof field ) );
@@ -275,7 +271,7 @@ var bm25fIMS = function () {
   // #### Add Doc
 
   // Adds a document to the model using `updateFreq()` function.
-  var addDoc = function ( doc, id ) {
+  var addDoc = async function ( doc, id ) {
     if ( config === null ) {
       throw Error( 'winkBM25S: Config must be defined before adding a document.' );
     }
@@ -286,23 +282,25 @@ var bm25fIMS = function () {
     }
     // Set learning/addition started.
     learned = true;
-    var length;
     if ( documents[ id ] !== undefined ) {
       throw Error( 'winkBM25S: Duplicate document encountered: ' + JSON.stringify( id ) );
     }
     documents[ id ] = Object.create( null );
     documents[ id ].freq = Object.create( null );
     documents[ id ].fieldValues = Object.create( null );
-    documents[ id ].length = 0;
     // Compute `freq` & `length` of the specified fields.
-    for ( var field in fldWeights ) {
-      if ( doc[ field ] === undefined ) {
-        throw Error( 'winkBM25S: Missing field in the document: ' + JSON.stringify( field ) );
-      }
-      length = updateFreq( id, doc[ field ], fldWeights[ field ], documents[ id ].freq, field );
-      documents[ id ].length += length;
-      totalCorpusLength += length;
-    }
+    documents[id].length = await reduce(
+      Object.keys(fldWeights),
+      async function (docsLen, field) {
+        if ( doc[ field ] === undefined ) {
+          throw Error( 'winkBM25S: Missing field in the document: ' + JSON.stringify( field ) );
+        }
+        const length = await updateFreq( id, doc[ field ], fldWeights[ field ], documents[ id ].freq, field );
+        totalCorpusLength += length;
+        return docsLen + length;
+      },
+      0
+    );
     // Retain Original Field Values, if configured.
     config.ovFldNames.forEach( function ( f ) {
       if ( doc[ f ] === undefined ) {
@@ -377,7 +375,7 @@ var bm25fIMS = function () {
   // retained field name/value pairs along with the `params` (which is passed as
   // the second argument). It is useful in limiting the search space or making the
   // search more focussed.
-  var search = function ( text, limit, filter, params ) {
+  var search = async function ( text, limit, filter, params ) {
     // Predict/Search only if learnings have been consolidated!
     if ( !consolidated ) {
       throw Error( 'winkBM25S: search is not possible unless learnings are consolidated!' );
@@ -392,7 +390,7 @@ var bm25fIMS = function () {
                 return true;
               };
     // Tokenized `text`. Use search specific weights.
-    var prepared = prepareInput( text, 'search' );
+    var prepared = await prepareInput( text, 'search' );
     // keep track of the contributions made by each token
     var tokens = [];
     prepared.forEach(function (token) {
