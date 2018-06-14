@@ -133,7 +133,7 @@ describe( 'complete clean workflow test', function () {
     expect( docs[ (await bts.search( 'whoes husband is barack' ))[ 0 ][ 0 ] ].body ).to.equal( text );
   } );
   it( 'search should return tokens', async function () {
-    expect( (await bts.search( 'whose husband is barack' )).tokens ).to.deep.equal( [ {
+    expect( (await bts.search( 'whose husband is barack nonsense' )).tokens ).to.deep.equal( [ {
         token: 'barack',
         scores: [
           [ '0', 2.834 ],
@@ -148,11 +148,17 @@ describe( 'complete clean workflow test', function () {
           [ '7', 0.8383 ],
           [ '1', 0.7745 ],
         ]
-     }, {
+      }, {
         token: 'whose',
         scores: [
           [ '3', 1.8492 ]
         ]
+      }, {
+        token: 'is',
+        scores: []
+      }, {
+        token: 'nonsens',
+        scores: []
      } ] );
   } );
 

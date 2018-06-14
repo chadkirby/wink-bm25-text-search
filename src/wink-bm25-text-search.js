@@ -399,8 +399,12 @@ var bm25fIMS = function () {
     var prepared = await prepareInput( text, 'search' );
     // keep track of the contributions made by each token
     var tokens = [];
-    prepared.forEach(function (token) {
-      tokens[token2Index[token]] = { token, scores: {} };
+    prepared.forEach(function (token, ii) {
+      let index = token2Index[token];
+      if (isNaN(index)) {
+        index = currTokenIndex + ii + 1;
+      }
+      tokens[index] = { token, scores: {} };
     });
     var tkns = prepared
                 // Filter out tokens that do not exists in the vocabulary.
@@ -416,7 +420,7 @@ var bm25fIMS = function () {
     // Helper variables.
     var id, ids, t;
     var i, imax, j, jmax;
-    // Iterate for every token in the preapred text.
+    // Iterate for every token in the prepared text.
     for ( j = 0, jmax = tkns.length; j < jmax; j += 1 ) {
       t = tkns[ j ];
       // Use Inverted Idx to look up - accelerates search!<br/>
