@@ -365,6 +365,12 @@ var bm25fIMS = function () {
     return true;
   }; // consolidate()
 
+  var sortAndSlice = function (results, limit) {
+    return helpers.object.table( results )
+          .sort( helpers.array.descendingOnValue )
+          .slice( 0, Math.max( ( limit || 10 ), 1 ) );
+  };
+
   // #### Search
 
   // Searches the `text` and return `limit` results. If `limit` is not sepcified
@@ -394,7 +400,7 @@ var bm25fIMS = function () {
     // keep track of the contributions made by each token
     var tokens = [];
     prepared.forEach(function (token) {
-      tokens[token2Index[token]] = { token, score: 0 };
+      tokens[token2Index[token]] = { token, scores: {} };
     });
     var tkns = prepared
                 // Filter out tokens that do not exists in the vocabulary.
@@ -423,7 +429,7 @@ var bm25fIMS = function () {
         id = ids[ i ];
         if ( f( documents[ id ].fieldValues, params ) ) {
           var score = documents[ id ].freq[ t ];
-          tokens[t].score += score;
+          tokens[t].scores[id] = score;
           results[ id ] = score + ( results[ id ] || 0 );
         }
         // To be uncommented to probe values!
@@ -432,11 +438,10 @@ var bm25fIMS = function () {
     }
     // Convert to a table in `[ id, score ]` format; sort and slice required number
     // of resultant documents.
-    results = ( ( helpers.object.table( results ) )
-                .sort( helpers.array.descendingOnValue )
-                .slice( 0, Math.max( ( limit || 10 ), 1 ) )
-           );
-    results.tokens = tokens.filter((tk) => tk);
+    results = sortAndSlice(results, limit);
+    results.tokens = tokens
+      .filter((tk) => tk)
+      .map((tk) => Object.assign(tk, { scores: sortAndSlice(tk.scores, limit) }));
     return results;
   }; // search()
 
