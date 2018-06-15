@@ -88,9 +88,6 @@ var bm25fIMS = function () {
   // If the `field` specific `pTasks` are not defined then it automatically
   // switches to default `pTasks`.
   var prepareInput = function ( input, field ) {
-    if (input.prepared) {
-      return input.prepared;
-    }
     return reduce(
       ( flds[ field ] && flds[ field ].pTasks ) || pTasks,
       (processedInput, pTask) => pTask(processedInput),
@@ -384,12 +381,12 @@ var bm25fIMS = function () {
   // retained field name/value pairs along with the `params` (which is passed as
   // the second argument). It is useful in limiting the search space or making the
   // search more focussed.
-  var search = async function ( query, limit, filter, params ) {
+  var search = async function ( text, limit, filter, params ) {
     // Predict/Search only if learnings have been consolidated!
     if ( !consolidated ) {
       throw Error( 'winkBM25S: search is not possible unless learnings are consolidated!' );
     }
-    if ( !query.prepared && typeof query !== 'string' ) {
+    if ( typeof text !== 'string' ) {
       throw Error( 'winkBM25S: search text should be a string, instead found: ' + ( typeof text ) );
     }
     // Setup filter function
@@ -399,7 +396,7 @@ var bm25fIMS = function () {
                 return true;
               };
     // Tokenized `text`. Use search specific weights.
-    var prepared = await prepareInput( query, 'search' );
+    var prepared = await prepareInput( text, 'search' );
     // keep track of the contributions made by each token
     var tokens = [];
     prepared.forEach(function (token, ii) {
