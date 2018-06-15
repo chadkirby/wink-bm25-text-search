@@ -104,9 +104,7 @@ var bm25fIMS = function () {
 
   // Updates the `freq` of each term in the `text` after pre-processing it via
   // `prepareInput()`; while updating, it takes care of `field's` `weight`.
-  var updateFreq = async function ( id, text, weight, freq, field ) {
-    // Tokenized `text`.
-    var tkns = await prepareInput( text, field );
+  var updateFreq = function ( id, tkns, weight, freq ) {
     // Temp token holder.
     var t;
     for ( var i = 0, imax = tkns.length; i < imax; i += 1 ) {
@@ -302,7 +300,9 @@ var bm25fIMS = function () {
         if ( doc[ field ] === undefined ) {
           throw Error( 'winkBM25S: Missing field in the document: ' + JSON.stringify( field ) );
         }
-        const length = await updateFreq( id, doc[ field ], fldWeights[ field ], documents[ id ].freq, field );
+        // Tokenized `text`.
+        var tkns = await prepareInput( doc[ field ], field );
+        const length = updateFreq( id, tkns, fldWeights[ field ], documents[ id ].freq );
         totalCorpusLength += length;
         return docsLen + length;
       },
