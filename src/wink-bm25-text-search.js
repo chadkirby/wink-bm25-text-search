@@ -24,6 +24,11 @@
 var helpers = require( 'wink-helpers' );
 var { reduce } = require( 'bluebird' );
 
+var obj = function (props) {
+  // return a null-prototype object with the given properties (if any)
+  return Object.assign(Object.create( null ), props);
+};
+
 /* eslint guard-for-in: 0 */
 /* eslint complexity: [ "error", 25 ] */
 
@@ -50,11 +55,11 @@ var bm25fIMS = function () {
   // Preparatory tasks that are executed on the `addDoc` & `search` input.
   var pTasks = [];
   // Field level prep tasks.
-  var flds = Object.create( null );
+  var flds = obj();
   // Returned!
-  var methods = Object.create( null );
+  var methods = obj();
   // Term Frequencies & length of each document.
-  var documents = Object.create( null );
+  var documents = obj();
   // Inverted Index for faster search
   var invertedIdx = [];
   // IDF for each tokens, tokens are referenced via their numerical index.
@@ -74,7 +79,7 @@ var bm25fIMS = function () {
   var config = null;
   // The `token: index` mapping; `index` is used everywhere instead
   // of the `token`
-  var token2Index = Object.create( null );
+  var token2Index = obj();
   // Index's initial value, incremented with every new word.
   var currTokenIndex = 0;
 
@@ -156,7 +161,7 @@ var bm25fIMS = function () {
       if ( !fldWeights[ field ] || typeof field !== 'string' ) {
         throw Error( 'winkBM25S: Field name is missing or it is not a string: ' + JSON.stringify( field ) + '/' + ( typeof field ) );
       }
-      flds[ field ] = flds[ field ] || Object.create( null );
+      flds[ field ] = flds[ field ] || obj();
       flds[ field ].pTasks = tasks;
       flds[ field ].pTaskCount = tasks.length;
     }
@@ -197,21 +202,22 @@ var bm25fIMS = function () {
       throw Error( 'winkBM25S: Field config has no field defined.' );
     }
     // Setup configuration now.
-    config = Object.create( null );
-      // Field config for BM25**F**
-    config.fldWeights = Object.create( null );
-    config.bm25Params = Object.create( null );
-    // **Controls TF part:**<br/>
-    // `k1` controls saturation of token's frequency; higher value delays saturation
-    // with increase in frequency.
-    config.bm25Params.k1 = 1.2;
-    // `b` controls the degree of normalization; **0** means no normalization and **1**
-    // indicates complete normalization!
-    config.bm25Params.b = 0.75;
-    // **Controls IDF part:**<br/>
-    // `k` controls impact of IDF; should be >= 0; a higher value means lower
-    // the impact of IDF.
-    config.bm25Params.k = 1;
+    config = obj({
+      // **Controls TF part:**<br/>
+      fldWeights: obj(),
+      bm25Params: obj({
+        // `k1` controls saturation of token's frequency; higher value delays saturation
+        // with increase in frequency.
+        k1: 1.2,
+        // `b` controls the degree of normalization; **0** means no normalization and **1**
+        // indicates complete normalization!
+        b: 0.75,
+        // **Controls IDF part:**<br/>
+        // `k` controls impact of IDF; should be >= 0; a higher value means lower
+        // the impact of IDF.
+        k: 1
+      })
+    });
     // Setup field weights.
     for ( var field in cfg.fldWeights ) {
       // The `null` check is required as `isNaN( null )` returns `false`!!
@@ -224,7 +230,7 @@ var bm25fIMS = function () {
     }
     // Setup BM25F params.
     // Create `bm25Params` if absent in `cfg`.
-    if ( !helpers.object.isObject( cfg.bm25Params ) ) cfg.bm25Params = Object.create( null );
+    if ( !helpers.object.isObject( cfg.bm25Params ) ) cfg.bm25Params = obj();
     // Update config parameters from `cfg`.
     config.bm25Params.b = (
                             ( cfg.bm25Params.b === null ) ||
@@ -285,9 +291,10 @@ var bm25fIMS = function () {
     if ( documents[ id ] !== undefined ) {
       throw Error( 'winkBM25S: Duplicate document encountered: ' + JSON.stringify( id ) );
     }
-    documents[ id ] = Object.create( null );
-    documents[ id ].freq = Object.create( null );
-    documents[ id ].fieldValues = Object.create( null );
+    documents[ id ] = obj({
+      freq: obj(),
+      fieldValues: obj()
+    });
     // Compute `freq` & `length` of the specified fields.
     documents[id].length = await reduce(
       Object.keys(fldWeights),
@@ -416,7 +423,7 @@ var bm25fIMS = function () {
                    return token2Index[ t ];
                  } );
     // Search results go here as doc id/score pairs.
-    var results = Object.create( null );
+    var results = obj();
     // Helper variables.
     var id, ids, t;
     var i, imax, j, jmax;
@@ -457,7 +464,7 @@ var bm25fIMS = function () {
     // Reset values of variables that are associated with learning; Therefore
     // `pTasks` & `pTaskCount` are not re-initialized.
     // Term Frequencies & length of each document.
-    documents = Object.create( null );
+    documents = obj();
     // Inverted Index for faster search
     invertedIdx = [];
     // IDF for each tokens
@@ -477,7 +484,7 @@ var bm25fIMS = function () {
     config = null;
     // The `token: index` mapping; `index` is used everywhere instead
     // of the `token`
-    token2Index = Object.create( null );
+    token2Index = obj();
     // Index's initial value, incremented with every new word.
     currTokenIndex = 0;
     return true;
@@ -487,7 +494,7 @@ var bm25fIMS = function () {
 
   // Returns the learnings, along with `consolidated` flag, in JSON format.
   var exportJSON = function ( ) {
-    var docStats = Object.create( null );
+    var docStats = obj();
     docStats.totalCorpusLength = totalCorpusLength;
     docStats.totalDocs = totalDocs;
     docStats.consolidated = consolidated;
