@@ -451,8 +451,11 @@ var bm25fIMS = function () {
     // of resultant documents.
     results = sortAndSlice(results, limit);
     results.tokens = tokens
-      .filter((tk) => tk)
-      .map((tk) => Object.assign(tk, { scores: sortAndSlice(tk.scores, limit) }));
+      .filter((token) => token)
+      .map(({ token, scores }) => ({
+        token,
+        score: sortAndSlice(scores, limit).reduce((sum, [ , val ]) => sum + val, 0)
+      }));
     return results;
   }; // search()
 
